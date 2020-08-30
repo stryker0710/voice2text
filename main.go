@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,9 +13,14 @@ type Page struct {
 	Title, Content string
 }
 
-//LangPage struct for displaying page
-type LangPage struct {
-	Room, Content string
+var t map[string]*template.Template
+
+func init() {
+	t = make(map[string]*template.Template)
+	temp := template.Must(template.ParseFiles("./templates/index.html", "./templates/head.html", "./templates/hello.html"))
+	t["hello.html"] = temp
+	temp = template.Must(template.ParseFiles("./templates/index.html", "./templates/head.html", "./templates/languages.html"))
+	t["lang.html"] = temp
 }
 
 func displayPage(w http.ResponseWriter, r *http.Request) {
@@ -22,27 +28,42 @@ func displayPage(w http.ResponseWriter, r *http.Request) {
 		Title:   "Speech to lang",
 		Content: "Chatbot that helps you with learning",
 	}
-	t := template.Must(template.ParseFiles("templates/index.html"))
-	t.Execute(w, p)
+	var b bytes.Buffer
+	err := t["hello.html"].ExecuteTemplate(&b, "index", p)
+	if err != nil {
+		fmt.Fprint(w, "A error occured.")
+		return
+	}
+	b.WriteTo(w)
 }
 
 func createEngRoom(w http.ResponseWriter, r *http.Request) {
-	p := &LangPage{
-		Room:    "English room",
+	p := &Page{
+		Title:   "English room",
 		Content: "Hello! Lets speak",
 	}
-	t := template.Must(template.ParseFiles("templates/languages.html"))
-	t.Execute(w, p)
+	var b bytes.Buffer
+	err := t["lang.html"].ExecuteTemplate(&b, "index", p)
+	if err != nil {
+		fmt.Fprint(w, "A error occured.")
+		return
+	}
+	b.WriteTo(w)
 	fmt.Println("user entered english room")
 }
 
 func createRusRoom(w http.ResponseWriter, r *http.Request) {
-	p := &LangPage{
-		Room:    "Русский зал",
+	p := &Page{
+		Title:   "Русский зал",
 		Content: "Привет! Давай начнем говорить",
 	}
-	t := template.Must(template.ParseFiles("templates/languages.html"))
-	t.Execute(w, p)
+	var b bytes.Buffer
+	err := t["lang.html"].ExecuteTemplate(&b, "index", p)
+	if err != nil {
+		fmt.Fprint(w, "A error occured.")
+		return
+	}
+	b.WriteTo(w)
 	fmt.Println("user entered russian room")
 }
 
