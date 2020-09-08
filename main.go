@@ -69,12 +69,16 @@ func createRusRoom(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	mux := http.NewServeMux()
-	fileServer := http.FileServer(http.Dir("./images"))
-	mux.Handle("/images/", http.StripPrefix("/images", fileServer))
-	jsServer := http.FileServer(http.Dir("./js"))
-	mux.Handle("/js/", http.StripPrefix("/js", jsServer))
-	cssServer := http.FileServer(http.Dir("./css"))
-	mux.Handle("/css/", http.StripPrefix("/css", cssServer))
+
+	muxRoutes:=make(map[string]http.Handler)
+	muxRoutes["images"]=http.FileServer(http.Dir("./images"))
+	muxRoutes["js"]=http.FileServer(http.Dir("./js"))
+	muxRoutes["css"]=http.FileServer(http.Dir("./css"))
+
+	for route,server:=range muxRoutes{
+		mux.Handle("/"+route+"/",http.StripPrefix("/"+route, server))
+	}
+
 	mux.HandleFunc("/", displayPage)
 	mux.HandleFunc("/english/", createEngRoom)
 	mux.HandleFunc("/russian/", createRusRoom)
