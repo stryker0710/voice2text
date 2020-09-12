@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"text/template"
 )
 
@@ -67,21 +69,40 @@ func createRusRoom(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("user entered russian room")
 }
 
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(32 << 20)
+	file, handler, err := r.FormFile("soundBlob")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+	fmt.Fprintf(w, "%v", handler.Header)
+	f, err := os.OpenFile("./files/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer f.Close()
+	io.Copy(f, file)
+}
+
 func main() {
 	mux := http.NewServeMux()
 
-	muxRoutes:=make(map[string]http.Handler)
+	/*muxRoutes:=make(map[string]http.Handler)
 	muxRoutes["images"]=http.FileServer(http.Dir("./images"))
 	muxRoutes["js"]=http.FileServer(http.Dir("./js"))
-	muxRoutes["css"]=http.FileServer(http.Dir("./css"))
+	muxRoutes["css"]=http.FileServer(http.Dir("./css"))*/
+	route := "public"
+	server := http.FileServer(http.Dir("./public"))
 
-	for route,server:=range muxRoutes{
-		mux.Handle("/"+route+"/",http.StripPrefix("/"+route, server))
-	}
+	mux.Handle("/"+route+"/", http.StripPrefix("/"+route, server))
 
 	mux.HandleFunc("/", displayPage)
 	mux.HandleFunc("/english/", createEngRoom)
 	mux.HandleFunc("/russian/", createRusRoom)
+	mux.HandleFunc("/upload/", uploadHandler)
 	err := http.ListenAndServe(":9090", mux) // set listen port
 	log.Fatal(err)
 
